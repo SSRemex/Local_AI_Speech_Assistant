@@ -16,6 +16,8 @@ python3 api.py
 pip3 install -r requirements.txt
 ```
 
+**注** 同时需要提前安装好`ffmpeg`的环境
+
 配置config.py文件，检查各个项目的路径，并且可以通过修改HISTORY进行AI角色设定
 
 最终，启动
