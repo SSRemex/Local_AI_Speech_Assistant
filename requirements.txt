@@ -7,3 +7,4 @@ Flask
 PyAudio
 soundfile
 requests
+ffmpeg
