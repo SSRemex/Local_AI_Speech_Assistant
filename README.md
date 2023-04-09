@@ -38,4 +38,5 @@ python3 app.py
 [ChatGML-6B](https://github.com/THUDM/ChatGLM-6B)
 # 更多
 包含更详细的部署系列文章
+
 ![感谢关注](./readme_img/qrcode.jpg)
