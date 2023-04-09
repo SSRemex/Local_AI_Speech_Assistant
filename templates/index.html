@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="/static/img/羽.ico">
+    <title>MOSS语音对话助手</title>
+    <!--引入Bootstrap样式-->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
+    <!--引入jQuery-->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1 class="text-center">MOSS语音对话助手</h1>
+    <div class="row justify-content-center">
+        <div class="col-8 col-md-12 col-lg-10">
+            <div class="card">
+                <div class="card-body overflow-auto" style="height: calc(90vh - 200px);" id="chatBody">
+                    <!--显示聊天记录-->
+                    <div id="chatLog"></div>
+                </div>
+                <div class="card-footer">
+                    <!--表单-->
+                    <form id="chatForm">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="请输入内容" name="userText"
+                                   autocomplete="off">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit">发送</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--引入Bootstrap JavaScript-->
+<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/js/bootstrap.min.js"></script>
+
+<script>
+    // 获取chatLog元素
+    var chatLog = $("#chatLog");
+
+    // 表单提交事件
+    $("#chatForm").submit(function (e) {
+        e.preventDefault();
+        var userText = $("input[name='userText']").val();
+        var message = "<div class='d-flex justify-content-end mt-3 media'><div class='bg-primary text-white rounded py-2 px-3'>" +
+            "<p class='m-0'>" + userText + "</p></div><img src='/static/img/user.jpeg' class='ml-2 rounded-circle' style='width: 40px; height: 40px;'></div>";
+        chatLog.append(message);
+        scrollToBottom();
+        $("#sendButton").prop("disabled", true); // 禁用发送按钮
+
+        // 发送AJAX请求
+        $.ajax({
+            type: "POST",
+            url: "/chat",
+            data: JSON.stringify({"text": userText}),
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (response) {
+                // 自动播放音频
+                var audio = new Audio("/static/output_wav/" + response.audio + "?t=" + Date.now());
+                audio.play();
+
+                // 添加机器人回复消息
+                var botMessage = "<div class='d-flex justify-content-start mt-3 media'>" +
+                    "<img src='/static/img/bot.png' class='mr-2 rounded-circle' style='width: 40px; height: 40px;' >" +
+                    "<div class='bg-light rounded py-2 px-3' style='max-width: 60%;'>" +
+                    "<p class='m-0' id='bot_msg_" + response.time_id + "'></p></div></div>";
+                chatLog.append(botMessage);
+                scrollToBottom();
+
+                showResponse(response.response, response.time_id)
+                scrollToBottom();
+
+            },
+            error: function (response) {
+                console.log("error");
+            }
+        });
+
+        $("#sendButton").prop("disabled", false); // 禁用发送按钮
+        // 清空输入框
+        $("input[name='userText']").val("");
+    });
+</script>
+<script>
+    function showResponse(response, time_id) {
+        var container = document.getElementById("bot_msg_" + time_id);
+        var index = 0;
+
+        // 每隔100毫秒输出一个字符
+        var timer = setInterval(function () {
+            if (index >= response.length) {
+                clearInterval(timer);
+                return;
+            }
+            container.innerHTML += response.charAt(index);
+            index++;
+            scrollToBottom();
+        }, 100);
+    }
+
+    // 自动滚动滑块到底部
+    function scrollToBottom() {
+        var chatLog = document.getElementById("chatBody");
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+</script>
+</body>
+</html>
