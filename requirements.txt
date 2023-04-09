@@ -1,0 +1,9 @@
+gradio
+mdtex2html
+sentencepiece
+paddlespeech
+paddlepaddle
+Flask
+PyAudio
+soundfile
+requests
