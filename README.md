@@ -1,6 +1,8 @@
 # Local_AI_Speech_Assistant
 这是本人对模型本地化的一些摸索
+
 该项目通过ChatGLM、飞浆的语音合成和语音识别，打造了一个可以语音对话的助手应用。这里我用的是MOSS的语音
+
 # 使用
 首先，需要先装好ChatGML-6B，参考[ChatGML-6B](https://github.com/THUDM/ChatGLM-6B)
 通过api.py文件来启动一个服务接口，这个过程可能会比较漫长
@@ -34,7 +36,7 @@ python3 app.py
 
 # 感谢
 [【有手就行】使用你自己的声音做语音合成](https://aistudio.baidu.com/aistudio/projectdetail/5003396)
-
+[【语音识别】](https://github.com/PaddlePaddle/PaddleSpeech/tree/develop/demos/automatic_video_subtitiles)
 [ChatGML-6B](https://github.com/THUDM/ChatGLM-6B)
 # 更多
 包含更详细的部署系列文章
