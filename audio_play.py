@@ -35,3 +35,14 @@ def a_speed(input_file, speed, out_file):
     except Exception:
         return False
 
+
+# 调整音频channel和HZ为16k 1channel
+def a_hz(input_file, out_file):
+    try:
+        cmd = "ffmpeg -y -i %s -ac 1 -ar 16000 -vn %s" % (input_file, out_file)
+        res = subprocess.call(cmd, shell=True)
+        if res != 0:
+            return False
+        return True
+    except Exception:
+        return False
