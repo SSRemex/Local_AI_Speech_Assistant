@@ -8,10 +8,16 @@
     <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css">
     <!--引入jQuery-->
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- 引入 RecordRTC 库 -->
+    <script src="https://cdn.webrtc-experiment.com/RecordRTC.js"></script>
+
 </head>
 <body>
 <div class="container">
-    <h1 class="text-center">MOSS语音对话助手</h1>
+    <h1 class="text-center">
+        MOSS语音对话助手
+
+    </h1>
     <div class="row justify-content-center">
         <div class="col-8 col-md-12 col-lg-10">
             <div class="card">
@@ -20,17 +26,21 @@
                     <div id="chatLog"></div>
                 </div>
                 <div class="card-footer">
-                    <!--表单-->
-                    <form id="chatForm">
-                        <div class="input-group">
-                            <input type="text" class="form-control" placeholder="请输入内容" name="userText"
-                                   autocomplete="off">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="submit">发送</button>
+                    <div class="input-group">
+                        <input id="chatInput" type="text" class="form-control col-8" placeholder="请输入内容" name="userText"
+                               autocomplete="off">
+                        <div class="input-group-append col-4">
+                            <button id="sendChatButton" class="btn btn-primary col-4">发送</button>
+                            <button id="recordButton" class="btn btn-primary ml-2 col-6">按住录音</button>
+                            <div class="ml-2">
+                                <div id="spinner" class="spinner-border text-primary d-none" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
                             </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -41,17 +51,26 @@
 
 <script>
     // 获取chatLog元素
-    var chatLog = $("#chatLog");
+    const chatLog = $("#chatLog");
 
-    // 表单提交事件
-    $("#chatForm").submit(function (e) {
+    const spinner = document.getElementById("spinner");
+    // 获取录音按钮和表单
+    let sendChatButton = document.getElementById("sendChatButton");
+    const chatInput = document.getElementById("chatInput")
+
+    sendChatButton.addEventListener("click", function (e) {
         e.preventDefault();
-        var userText = $("input[name='userText']").val();
-        var message = "<div class='d-flex justify-content-end mt-3 media'><div class='bg-primary text-white rounded py-2 px-3'>" +
-            "<p class='m-0'>" + userText + "</p></div><img src='/static/img/user.jpeg' class='ml-2 rounded-circle' style='width: 40px; height: 40px;'></div>";
-        chatLog.append(message);
-        scrollToBottom();
-        $("#sendButton").prop("disabled", true); // 禁用发送按钮
+
+        let userText = chatInput.value;
+        // 清空输入框
+        chatInput.value = "";
+        if (!showMessage(userText)) {
+            alert("输入异常");
+            return;
+        }
+
+        // 显示加载动画
+        spinner.classList.remove('d-none');
 
         // 发送AJAX请求
         $.ajax({
@@ -61,44 +80,139 @@
             contentType: "application/json;charset=utf-8",
             dataType: "json",
             success: function (response) {
+                spinner.classList.add('d-none');
                 // 自动播放音频
-                var audio = new Audio("/static/output_wav/" + response.audio + "?t=" + Date.now());
+                let audio = new Audio("/static/output_wav/" + response.audio + "?t=" + Date.now());
                 audio.play();
 
-                // 添加机器人回复消息
-                var botMessage = "<div class='d-flex justify-content-start mt-3 media'>" +
-                    "<img src='/static/img/bot.png' class='mr-2 rounded-circle' style='width: 40px; height: 40px;' >" +
-                    "<div class='bg-light rounded py-2 px-3' style='max-width: 60%;'>" +
-                    "<p class='m-0' id='bot_msg_" + response.time_id + "'></p></div></div>";
-                chatLog.append(botMessage);
+                showResponse(response)
                 scrollToBottom();
-
-                showResponse(response.response, response.time_id)
-                scrollToBottom();
-
             },
             error: function (response) {
+                spinner.classList.add('d-none');
                 console.log("error");
             }
         });
-
-        $("#sendButton").prop("disabled", false); // 禁用发送按钮
-        // 清空输入框
-        $("input[name='userText']").val("");
-    });
+    })
 </script>
 <script>
-    function showResponse(response, time_id) {
-        var container = document.getElementById("bot_msg_" + time_id);
-        var index = 0;
+    // 获取录音按钮
+    let recordButton = document.getElementById("recordButton");
 
+    // 定义 MediaRecorder 实例
+    let mediaRecorder = null;
+
+    // 按钮按下事件
+    recordButton.addEventListener("mousedown", function (e) {
+
+        // 开始录音
+        navigator.mediaDevices.getUserMedia({audio: true}).then(function (stream) {
+            // 创建 MediaRecorder 实例
+            mediaRecorder = new RecordRTC(stream, {
+                type: 'audio',
+                mimeType: 'audio/webm',
+            });
+            mediaRecorder.startRecording();
+
+            // 按钮改变样式
+            recordButton.innerText = "正在录音...";
+            recordButton.classList.remove("btn-primary");
+            recordButton.classList.add("btn-danger");
+        });
+    });
+
+    // 按钮松开事件
+    recordButton.addEventListener("mouseup", function (e) {
+
+        // 停止录音并上传到服务器
+        mediaRecorder.stopRecording(function () {
+            let blob = mediaRecorder.getBlob();
+            let formData = new FormData();
+            formData.append('audio', blob, "record.wav");
+            // 显示加载动画
+            spinner.classList.remove('d-none');
+            $.ajax({
+                url: "/upload_wav",
+                type: "POST",
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function (response) {
+                    if (response.error != "") {
+                        alert(response.error)
+                        return;
+                    }
+
+                    if (!showMessage(response.source_message)) {
+                        alert("输入异常");
+                        return;
+                    }
+                    // 自动播放音频
+                    let audio = new Audio("/static/output_wav/" + response.audio + "?t=" + Date.now());
+                    audio.play();
+
+                    showResponse(response)
+                    scrollToBottom();
+                    spinner.classList.add('d-none');
+
+                },
+                error: function (response) {
+                    spinner.classList.add('d-none');
+                    console.log("error");
+                }
+            });
+        });
+        recordButton.innerText = "按住录音";
+        recordButton.classList.remove("btn-danger");
+        recordButton.classList.add("btn-primary");
+
+
+    });
+
+</script>
+<script>
+    // 转义
+    function escapeHTML(str) {
+        const parser = new DOMParser();
+        const dom = parser.parseFromString(`${str}`, 'text/html');
+        return dom.body.textContent;
+    }
+
+    function showMessage(message) {
+        let sec_message = escapeHTML(message);
+        if (sec_message == "") {
+
+            return false;
+        }
+        let userText = "<div class='d-flex justify-content-end mt-3 media'><div class='bg-primary text-white rounded py-2 px-3'>" +
+            "<p class='m-0'>" + sec_message + "</p></div><img src='/static/img/user.jpeg' class='ml-2 rounded-circle' style='width: 40px; height: 40px;'></div>";
+        chatLog.append(userText);
+        scrollToBottom();
+
+        return true;
+    }
+
+    function showResponse(response) {
+
+        // 添加机器人回复消息
+        let botMessage = "<div class='d-flex justify-content-start mt-3 media'>" +
+            "<img src='/static/img/bot.png' class='mr-2 rounded-circle' style='width: 40px; height: 40px;' >" +
+            "<div class='bg-light rounded py-2 px-3' style='max-width: 60%;'>" +
+            "<p class='m-0' id='bot_msg_" + response.time_id + "'></p></div></div>";
+        chatLog.append(botMessage);
+        scrollToBottom();
+
+        let container = document.getElementById("bot_msg_" + response.time_id);
+        let index = 0;
+
+        let res = escapeHTML(response.response);
         // 每隔100毫秒输出一个字符
-        var timer = setInterval(function () {
-            if (index >= response.length) {
+        let timer = setInterval(function () {
+            if (index >= res.length) {
                 clearInterval(timer);
                 return;
             }
-            container.innerHTML += response.charAt(index);
+            container.innerHTML += response.response.charAt(index);
             index++;
             scrollToBottom();
         }, 100);
