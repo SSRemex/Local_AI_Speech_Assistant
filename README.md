@@ -36,7 +36,9 @@ python3 app.py
 
 # 感谢
 [【有手就行】使用你自己的声音做语音合成](https://aistudio.baidu.com/aistudio/projectdetail/5003396)
+
 [【语音识别】](https://github.com/PaddlePaddle/PaddleSpeech/tree/develop/demos/automatic_video_subtitiles)
+
 [ChatGML-6B](https://github.com/THUDM/ChatGLM-6B)
 # 更多
 包含更详细的部署系列文章
