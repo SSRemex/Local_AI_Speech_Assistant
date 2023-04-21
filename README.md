@@ -9,6 +9,7 @@
 ```shell
 python3 api.py
 ```
+再启动之后，把服务的网址填入到config.py中
 
 将release中的inference下载下来放到项目目录下解压，这个是我训练好的MOSS的语音，如果想替换成自己训练的可以参考[【有手就行】使用你自己的声音做语音合成](https://aistudio.baidu.com/aistudio/projectdetail/5003396)
 并进行替换
